@@ -1,0 +1,33 @@
+body {
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#game-area-main {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.player{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+.game-board {
+    background-color: whitesmoke;
+    position: relative;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+}
