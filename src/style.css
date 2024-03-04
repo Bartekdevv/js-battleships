@@ -11,10 +11,9 @@ body {
     justify-content: space-evenly;
 }
 
-.player{
+.game-area-player{
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
 }
 
 .game-board {
@@ -30,4 +29,28 @@ body {
 .column {
     display: flex;
     flex-direction: column;
+}
+
+#start-button {
+    padding: 10px 30px;
+    font-size: large;
+    cursor: pointer;
+    border-radius: 12px;
+    border: none;
+    text-decoration: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+}
+
+#start-button:hover {
+    background-color: lightgrey;
+}
+
+#start-button:active {
+    background-color: grey;
+}
+
+.tile {
+    position: absolute;
+    border: 1px solid grey;
 }
