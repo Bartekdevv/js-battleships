@@ -1,22 +1,8 @@
 body {
-    text-align: center;
-    align-items: center;
-    justify-content: center;
     font-family: 'Courier New', Courier, monospace;
 }
 
-#game-area-main {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
-}
-
-.game-area-player{
-    display: flex;
-    flex-direction: column;
-}
-
-.game-board {
+.battlefield {
     background-color: whitesmoke;
     position: relative;
 }
@@ -24,11 +10,29 @@ body {
 .row {
     display: flex;
     flex-direction: row;
+    align-items: flex-start;
 }
 
 .column {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+}
+
+.main-axis-space-evenly {
+    justify-content: space-evenly;
+}
+
+.cross-axis-center {
+    align-items: center;
+}
+
+.cross-axis-end {
+    align-items: end;
+}
+
+.text-center {
+    text-align: center;
 }
 
 #start-button {
@@ -38,7 +42,7 @@ body {
     border-radius: 12px;
     border: none;
     text-decoration: none;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: inherit;
     font-weight: bold;
 }
 
@@ -52,5 +56,7 @@ body {
 
 .tile {
     position: absolute;
+    background-color: transparent;
     border: 1px solid grey;
+    cursor: pointer;
 }
