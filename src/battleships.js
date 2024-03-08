@@ -170,7 +170,7 @@ class Game {
    #toggleShipRotation(event) {
         if(event.key != 'r' || this.#state != GameState.preparation) return;
         let alignment = this.#currentPlayer.shipAlignment;
-        this.#currentPlayer.shipAlignment = alignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;
+        this.#currentPlayer.setAlignment(alignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical);
         this.#lastHover?.dispatchEvent(new CustomEvent('mouseover', {target: this.#lastHover}));
     }
 
@@ -199,9 +199,15 @@ class Game {
 class Player {
     constructor(name) {
         this.name = name;
-        this.shipsToPlace = Array.from(REQUIRED_SHIPS, (shipSize, index) => new Battleship(shipSize));
+        this.shipsToPlace = Array.from(REQUIRED_SHIPS, (shipSize, index) => new Battleship(shipSize, Alignment.vertical));
         this.shipsPlaced = [];
         this.shipAlignment = Alignment.vertical;
+    }
+
+    setAlignment(alignment) {
+        this.shipAlignment = alignment;
+        for(let ship of this.shipsToPlace)
+            ship.alignment = this.shipAlignment;
     }
 
     nextShip() {
@@ -226,15 +232,24 @@ class Player {
 }
 
 class Battleship {
-    constructor(size) {
+    constructor(size, alignment) {
         this.size = size;
         this.tiles = [];
+        this.alignment = alignment;
     }
 
     place() {
-        for(let tile of this.tiles) {
-            tile.innerHTML = 'X';
-        }
+        let ship = document.createElement('div');
+        ship.style.animationName = 'grow';
+        ship.style.animationDuration = '2s';
+        ship.style.position = 'absolute';
+        ship.style.width = `${this.alignment == Alignment.horizontal ? this.tiles.length * TILE_WIDTH : TILE_WIDTH}px`;
+        ship.style.height = `${this.alignment == Alignment.vertical ? this.tiles.length * TILE_HEIGHT : TILE_HEIGHT}px`;
+        ship.style.top = this.tiles[0].style.top;
+        ship.style.left = this.tiles[0].style.left;
+        ship.style.backgroundColor = 'black';
+
+        document.getElementById(`battlefield-p${this.tiles[0].id.split('-')[0]}`).appendChild(ship);
     }
 
     showPreview (color) {
