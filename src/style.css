@@ -23,8 +23,16 @@ body {
     justify-content: space-evenly;
 }
 
+.main-axis-space-between {
+    justify-content: space-between;
+}
+
 .cross-axis-center {
     align-items: center;
+}
+
+.cross-axis-strech {
+    align-items: stretch;
 }
 
 .cross-axis-end {
@@ -35,7 +43,7 @@ body {
     text-align: center;
 }
 
-#start-button {
+#state-btn {
     padding: 10px 30px;
     font-size: large;
     cursor: pointer;
@@ -46,17 +54,47 @@ body {
     font-weight: bold;
 }
 
-#start-button:hover {
-    background-color: lightgrey;
+#state-btn:hover {
+    filter: brightness(85%);
 }
 
-#start-button:active {
-    background-color: grey;
+#state-btn:active {
+    filter: brightness(50%);
 }
 
 .tile {
     position: absolute;
-    background-color: transparent;
     border: 1px solid grey;
     cursor: pointer;
+    animation-name: hide;
+}
+
+@keyframes drop {
+    0% {transform: scale(600%);}
+    50% {transform: scale(90%);}
+    100% {transform: scale(100%);}
+}
+
+@keyframes hide {
+    50% {transform: scale(110%);}
+    100% {transform: scale(0%);}
+}
+
+dialog {
+    border: none;
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 32px 0px;
+    border-radius: 12px;
+    transition: ease-out;
+    animation-name: drop;
+    animation-duration: 500ms;
+}
+
+dialog.hide {
+    animation-name: hide;
+    transition: ease-out;
+    animation-duration: 500ms;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.2);
 }
