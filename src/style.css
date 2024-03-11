@@ -2,11 +2,6 @@ body {
     font-family: 'Courier New', Courier, monospace;
 }
 
-.battlefield {
-    background-color: whitesmoke;
-    position: relative;
-}
-
 .row {
     display: flex;
     flex-direction: row;
@@ -23,24 +18,12 @@ body {
     justify-content: space-evenly;
 }
 
-.main-axis-space-between {
-    justify-content: space-between;
-}
-
 .cross-axis-center {
     align-items: center;
 }
 
-.cross-axis-strech {
-    align-items: stretch;
-}
-
 .cross-axis-end {
     align-items: end;
-}
-
-.text-center {
-    text-align: center;
 }
 
 #state-btn {
@@ -56,6 +39,7 @@ body {
 
 #state-btn:hover {
     filter: brightness(85%);
+    animation: raise 500ms forwards;
 }
 
 #state-btn:active {
@@ -63,43 +47,99 @@ body {
 }
 
 .tile {
-    position: absolute;
     border: 1px solid grey;
     cursor: pointer;
-    animation-name: hide;
 }
 
-@keyframes grow {
-    0% {transform: translateY(-100%);}
-    100% {transform: translateY(0%);}
+@keyframes slideInY {
+    from {
+        transform: translateY(-100%);
+        }
+    to {
+        transform: translateY(0%);
+    }
+}
+
+@keyframes slideInX {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0%);
+    }
 }
 
 @keyframes drop {
-    0% {transform: scale(600%);}
-    50% {transform: scale(90%);}
-    100% {transform: scale(100%);}
+    from {
+        transform: scale(600%);
+    }
+    50% {
+        transform: scale(90%);
+    }
+    to {
+        transform: scale(100%);
+    }
 }
 
 @keyframes hide {
-    50% {transform: scale(110%);}
-    100% {transform: scale(0%);}
+    50% {
+        transform: scale(110%);
+    }
+    to {
+        transform: scale(0%);
+    }
+}
+
+@keyframes raise {
+    to {
+        transform: scale(110%);
+    }
 }
 
 dialog {
     border: none;
     box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 32px 0px;
     border-radius: 12px;
-    transition: ease-out;
     animation-name: drop;
     animation-duration: 500ms;
 }
 
 dialog.hide {
     animation-name: hide;
-    transition: ease-out;
     animation-duration: 500ms;
 }
 
 dialog::backdrop {
     background-color: rgba(0, 0, 0, 0.2);
+}
+
+.ships {
+    min-width: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.ship {
+    position: absolute;
+    animation-duration: 1s;
+}
+
+#player-container {
+    margin-top: 20px;
+}
+
+#row-label {
+    display: flex;
+    align-items: center;
+    height: 100%;   
+}
+
+#player-grid {
+    display: inline-grid;
+    background-color: whitesmoke;
+}
+
+#col-label {
+    width: 100%;
+    text-align: center;
 }
