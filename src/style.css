@@ -14,6 +14,15 @@ body {
     align-items: flex-start;
 }
 
+.expanded {
+    height: 100%;
+    width: 100%;
+}
+
+.main-axis-space-between {
+    justify-content: space-between;
+}
+
 .main-axis-space-evenly {
     justify-content: space-evenly;
 }
@@ -48,10 +57,11 @@ body {
 
 .tile {
     border: 1px solid grey;
+    border-radius: 4px;
     cursor: pointer;
 }
 
-@keyframes slideInY {
+@keyframes slideInV {
     from {
         transform: translateY(-100%);
         }
@@ -60,7 +70,7 @@ body {
     }
 }
 
-@keyframes slideInX {
+@keyframes slideInH {
     from {
         transform: translateX(-100%);
     }
@@ -98,6 +108,7 @@ body {
 
 dialog {
     border: none;
+    outline: none;
     box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 32px 0px;
     border-radius: 12px;
     animation-name: drop;
@@ -121,7 +132,8 @@ dialog::backdrop {
 
 .ship {
     position: absolute;
-    animation-duration: 1s;
+    animation-duration: 500ms;
+    border-radius: 4px;
 }
 
 #player-container {
