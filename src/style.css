@@ -19,14 +19,6 @@ body {
     width: 100%;
 }
 
-.main-axis-space-between {
-    justify-content: space-between;
-}
-
-.main-axis-space-evenly {
-    justify-content: space-evenly;
-}
-
 .cross-axis-center {
     align-items: center;
 }
@@ -134,9 +126,13 @@ dialog::backdrop {
     position: absolute;
     animation-duration: 500ms;
     border-radius: 4px;
+    background-color: black;
+    pointer-events: none;
 }
 
 #player-container {
+    display: grid;
+    grid-template-columns: auto auto;
     margin-top: 20px;
 }
 

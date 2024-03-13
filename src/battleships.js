@@ -50,7 +50,7 @@ class Game {
 
     showDialog(title, content) {
         let dialog = document.createElement('dialog');
-        dialog.className = 'column main-axis-space-between cross-axis-center';
+        dialog.className = 'column cross-axis-center';
 
         dialog.innerHTML += `<h2>${title}</h2>`;
         dialog.innerHTML += `<h3>${content}</h3>`;
@@ -102,6 +102,7 @@ class Game {
                 break;
             case GameState.preparation: 
                 this.playing.determineShipTiles(null);
+                break;
             case GameState.battle:
                 break;
         }
@@ -135,7 +136,7 @@ class Player {
         this.html.appendChild(playerName);
         this.html.appendChild(this.board.html);
 
-        let playerContainer  = document.getElementById('player-container');
+        const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
     }
 
@@ -160,17 +161,17 @@ class Player {
     get canPlaceShip() {
     if (this.nextShip == null || this.nextShip.tiles.length < this.nextShip.size) return false;
 
-    const neighboringTilesSet = new Set();
+    const neighbouringTilesSet = new Set();
 
     for (const ship of this.placedShips) {
         for (const tile of ship.tiles) {
-            const neighboringTiles = this.board.getNeighboringTiles(tile);
-            neighboringTiles.forEach(t => neighboringTilesSet.add(t));
+            const neighbouringTiles = this.board.getNeighbouringTiles(tile);
+            neighbouringTiles.forEach(t => neighbouringTilesSet.add(t));
         }
     }
 
     for (const tile of this.nextShip.tiles) {
-        if (neighboringTilesSet.has(tile)) return false;
+        if (neighbouringTilesSet.has(tile)) return false;
     }
 
     return true;
@@ -181,18 +182,14 @@ class Player {
     }
 
     determineShipTiles(tile) {
-        this.nextShip?.removeHighlight();
-        if(this.nextShip != null)
-            this.nextShip.tiles = [];
-        else return;
-        if(tile == null || !this.board.tiles.includes(tile)) return;
-        this.nextShip.tiles = this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size);
+        if(tile == null) return this.nextShip?.setTiles(new Array());
+        else if(!this.board.tiles.includes(tile) || this.nextShip == null) return;
+        this.nextShip.setTiles(this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size));
         this.nextShip?.highlight(this.canPlaceShip ? 'lightgreen' : 'rgba(255, 0, 0, 0.5)');
     }
-
+    
     placeShip() {
         if(this.canPlaceShip){
-            this.nextShip.removeHighlight();
             this.nextShip.place(this.board);
             this.placedShips.push(this.shipsToPlace.shift());
         }
@@ -242,26 +239,35 @@ class Board {
         this.html.appendChild(grid);
     }
 
-    clear() {
-        for(const tile of this.tiles)
-            tile.html.style = null;
+    clear () {
+        this.tiles.forEach((tile) => tile.resetStyle());
     }
 
     getTilesInLine(startTile, alignment, length) {
-        let isVertical = alignment == Alignment.vertical;
-
         return this.tiles.filter(
-            (tile) =>  isVertical ? tile.col == startTile.col && tile.row >= startTile.row && tile.row < startTile.row + length
-            : tile.row == startTile.row && tile.col >= startTile.col && tile.col < startTile.col + length
+            (tile) =>  {
+                if(alignment == Alignment.vertical){
+                    return (
+                        tile.col == startTile.col &&
+                         tile.row >= startTile.row && 
+                         tile.row < startTile.row + length
+                    );
+                } else{
+                    return (
+                        tile.row == startTile.row &&
+                         tile.col >= startTile.col &&
+                          tile.col < startTile.col + length
+                    );
+                }
+            }
         );
     }
 
-    getNeighboringTiles(tile) {
+    getNeighbouringTiles(tile) {
         return this.tiles.filter((item) => {
             if(item == tile) return false;
-            if (Math.abs(item.row - tile.row) <= 1 && Math.abs(item.col - tile.col) <= 1) {
+            if (Math.abs(item.row - tile.row) <= 1 && Math.abs(item.col - tile.col) <= 1)
                 return true;
-            }
             return false;
         })
     }
@@ -305,6 +311,10 @@ class Tile {
     set color(color) {
         this.html.style.backgroundColor = color;
     }
+
+    resetStyle(){
+        this.html.removeAttribute('style');
+    }
 }
 
 const Alignment = {
@@ -319,19 +329,25 @@ class Battleship {
         this.alignment = alignment;
     }
 
-    highlight(color) {
-        for(let tile of this.tiles) {
-            tile.color = color;
-        }
+    setTiles(tiles) {
+        this.unhighlight();
+        this.tiles = tiles;
     }
-    
-    removeHighlight(color) {
-        for(let tile of this.tiles) {
-            tile.html.style = null;
+
+    unhighlight() {
+        for(const tile of this.tiles)
+            tile.resetStyle();
+    }
+
+    highlight(color) {
+        for(const tile of this.tiles) {
+            tile.color = color;
         }
     }
 
     place(board) {
+        this.unhighlight();
+
         this.html = document.createElement('div');
         this.html.className = 'ship';
         this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
@@ -339,7 +355,6 @@ class Battleship {
         this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
-        this.html.style.backgroundColor = 'red';
 
         const grid = board.html.lastChild;
         grid.appendChild(this.html);
