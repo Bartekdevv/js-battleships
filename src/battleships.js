@@ -4,25 +4,32 @@ const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
 const REQUIRED_SHIPS = [5, 4, 4, 3, 3, 3, 2, 2, 2, 2];
+const TEST_SHIPS = [2];
 
 const GameState = {
     initial: 0,
     preparation: 1,
     battle: 2,
+    gameOver: 3
 };
 
 class Game {
-    constructor() {
-        this.players = [new Player(), new Player()];
-        this.playing = this.players[0];
+    init() {
+        document.getElementById('player-container').innerHTML = '';
 
-        for(let i = 0; i < this.players.length; i++){
+        this.players = [new Player(), new Player()];
+
+        for(let i = 0; i < 2; i++){
             this.players[i].init(`Player ${i+1}`, new Board(10, 10));
             this.players[i].board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
             this.players[i].board.ontilemouseleave = (tile) => this.handleTileMouseLeave(tile);
             this.players[i].board.ontileclicked = (tile) => this.handleTileClick(tile);
         }
-        document.addEventListener('keypress', (event) => event.key == 'r' ? this.toggleCurrentPlayerShipRotation() : null);
+
+        this.inTurn = this.players[0];
+        this.notInTurn = this.players[1];
+
+        document.addEventListener('keypress', (event) => event.key == 'r' ? this.toggleCurrentPlayerShipAlignment() : null);   
     }
 
     run() {
@@ -33,12 +40,16 @@ class Game {
         if(this.state == state) return;
         switch(state) {
             case GameState.initial:
+                this.init();
                 break;
             case GameState.preparation:
-                this.showDialog('Ship positioning phase', `${this.playing.name} turn`);
+                this.showDialog('Ship Positioning Stage', `${this.inTurn.name} Turn`);
                 break;
             case GameState.battle:
-                this.showDialog('Battle phase', `${this.playing.name} turn`);
+                this.showDialog('Battle Stage', `${this.inTurn.name} Turn`);
+                break;
+            case GameState.gameOver:
+                this.showDialog('Game Over', `${this.inTurn.name} has won the Game!`, null);
                 break;
         }
         const stateBtn = document.getElementById('state-btn');
@@ -48,80 +59,93 @@ class Game {
         this.state = state;
     }
 
-    showDialog(title, content) {
+    showDialog(title, content, duration = 2000) {
         const dialog = document.createElement('dialog');
         dialog.className = 'column main-axis-space-between cross-axis-center';
 
         dialog.innerHTML += `<h2>${title}</h2>`;
         dialog.innerHTML += `<h3>${content}</h3>`;
         
+        if(duration == null)
+            dialog.innerHTML += '<h5> click anywhere to continue... </h5>';
+        
         document.body.appendChild(dialog);
         dialog.showModal();
-        dialog.addEventListener('animationend', () => {
+        dialog.addEventListener(duration != null ? 'animationend' : 'click', () => {
             setTimeout(() => {
                 dialog.classList.add('hide');
                 dialog.addEventListener('animationend', () => dialog.remove());
-            }, 2000);
+            }, duration);
         })
     }
 
     handleTileClick(tile) {
         switch(this.state){
-            case GameState.initial:
-                break;
             case GameState.preparation:
-                this.playing.placeShip();
+                this.inTurn.placeShip();
                 if(this.allShipsPlaced){
+                    this.inTurn.hideShips();
                     this.switchPlayers();
                     this.setState(GameState.battle);
-                } else if(this.playing.allShipsPlaced){
+                } else if(this.inTurn.allShipsPlaced){
+                    this.inTurn.hideShips();
                     this.switchPlayers();
-                    this.showDialog('Ship positioning phase', `${this.playing.name} turn`);
+                    this.showDialog('Ship Positioning Stage', `${this.inTurn.name} turn`);
                 };
+                break;
             case GameState.battle:
+                if(this.notInTurn.handleTileHit(tile)){
+                    if(this.notInTurn.allShipsDestroyed)
+                        this.setState(GameState.gameOver);
+                    else
+                        this.switchPlayers();
+                }
                 break;
         }
     }
 
     handleTileMouseOver(tile) {
         switch(this.state){
-            case GameState.initial:
-                break;
             case GameState.preparation: 
-                this.playing.determineShipTiles(tile);
+                this.inTurn.determineShipTiles(tile);
+                break;
             case GameState.battle:
+                this.notInTurn.board.highlightTile(tile);
                 break;
         }
     }
 
     handleTileMouseLeave(tile) {
         switch(this.state){
-            case GameState.initial:
+            case GameState.preparation:
+                this.inTurn.determineShipTiles(null);
                 break;
-            case GameState.preparation: 
-                this.playing.determineShipTiles(null);
             case GameState.battle:
+                this.notInTurn.board.unhighlightTile(tile);
                 break;
         }
     }
 
     switchPlayers() {
-        this.playing = this.playing == this.players[0] ? this.players[1] : this.players[0];
+        let temp = this.notInTurn;
+        this.notInTurn = this.inTurn;
+        this.inTurn = temp;
     }
 
-    toggleCurrentPlayerShipRotation() {
-        this.playing.toggleShipAlignment();
+    toggleCurrentPlayerShipAlignment() {
+        this.inTurn.toggleShipAlignment();
     }
 
     get allShipsPlaced() {
-        return this.players[0].allShipsPlaced && this.players[1].allShipsPlaced;
+        return this.inTurn.allShipsPlaced && this.notInTurn.allShipsPlaced;
     }
 }
 
 class Player {
     constructor() {
-        this.shipsToPlace = Array.from(REQUIRED_SHIPS, (shipSize, index) => new Battleship(shipSize, Alignment.vertical));
+        this.shipsToPlace = Array.from(TEST_SHIPS, (shipSize, _) => new Battleship(shipSize, Alignment.vertical));
         this.placedShips = new Array();
+        this.destroyedShips = new Array();
     }
 
     init(name, board){
@@ -183,7 +207,10 @@ class Player {
     }
 
     determineShipTiles(tile) {
-        if(tile == null || !this.board.tiles.includes(tile)) return;
+        if(tile == null || !this.board.tiles.includes(tile)) {
+            this.nextShip?.setPlacement(null);
+            return;
+        }
         this.nextShip?.setPlacement(this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size));
         this.nextShip?.highlight(this.canPlaceShip ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)');
     }
@@ -193,6 +220,32 @@ class Player {
             this.nextShip.place(this.board);
             this.placedShips.push(this.shipsToPlace.shift());
         }
+    }
+
+    hideShips(){
+        for(const ship of this.placedShips)
+            ship.hide();
+    }
+
+    handleTileHit(tile) {
+        if(!this.board.tiles.includes(tile)) return false;
+        tile.disable();
+        tile.color = 'steelblue';
+        for(const ship of this.placedShips){
+            if(ship.tiles.includes(tile)){
+                ship.markHit(tile);
+                if(ship.hasSunk){
+                    this.destroyedShips.push(
+                        this.placedShips.splice(this.placedShips.indexOf(ship), 1)[0]
+                    );
+                }
+            }
+        }
+        return true;
+    }
+
+    get allShipsDestroyed() {
+        return this.placedShips.length == 0;
     }
 }
 
@@ -272,6 +325,16 @@ class Board {
         })
     }
 
+    highlightTile(tile) {
+        if(!this.tiles.includes(tile)) return;
+        tile.raise();
+    }
+
+    unhighlightTile(tile) {
+        if(!this.tiles.includes(tile)) return;
+        tile.reset();
+    }
+
     set ontileclicked(func) {
         for(const tile of this.tiles)
             tile.onclick = () => func(tile);
@@ -298,8 +361,11 @@ class Battleship {
 
     setPlacement(tiles) {
         this.unhighlight();
-        if(tiles == null) return this.tiles = new Array();
-        this.tiles = tiles;
+        if(tiles == null || tiles.length == 0){
+            this.tiles = new Array();
+        }
+        else
+            this.tiles = tiles;
     }
 
     highlight(color) {
@@ -310,7 +376,7 @@ class Battleship {
     
     unhighlight() {
         for(const tile of this.tiles) {
-            tile.html.removeAttribute('style');
+            tile.reset();
         }
     }
 
@@ -327,6 +393,19 @@ class Battleship {
 
         const grid = board.html.lastChild;
         grid.appendChild(this.html);
+    }
+
+    hide() {
+        this.html.remove();
+    }
+
+    markHit(tile) {
+        tile.color = 'red';
+        this.hitTiles.push(this.tiles.splice(this.tiles.indexOf(tile), 1)[0]);
+    }
+
+    get hasSunk() {
+        return this.tiles.length == 0;
     }
 }
 
@@ -352,6 +431,22 @@ class Tile {
 
     set color(color) {
         this.html.style.backgroundColor = color;
+    }
+
+    raise() {
+        this.color = 'lightgrey';
+        this.html.style.animation = 'raise 500ms forwards';
+    }
+
+    reset() {
+        this.html.removeAttribute('style');
+    }
+
+    disable() {
+        this.onclick = null;
+        this.onmouseover = null;
+        this.onmouseleave = null;
+        this.reset();
     }
 }
 
