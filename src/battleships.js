@@ -41,7 +41,7 @@ class Game {
                 this.showDialog('Battle phase', `${this.playing.name} turn`);
                 break;
         }
-        let stateBtn = document.getElementById('state-btn');
+        const stateBtn = document.getElementById('state-btn');
         stateBtn.innerHTML = state == GameState.initial ? 'Start' : 'Reset';
         stateBtn.style.backgroundColor = state == GameState.initial ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
         stateBtn.onclick = () => this.setState(state == GameState.initial ? GameState.preparation : GameState.initial);
@@ -49,7 +49,7 @@ class Game {
     }
 
     showDialog(title, content) {
-        let dialog = document.createElement('dialog');
+        const dialog = document.createElement('dialog');
         dialog.className = 'column main-axis-space-between cross-axis-center';
 
         dialog.innerHTML += `<h2>${title}</h2>`;
@@ -69,17 +69,15 @@ class Game {
         switch(this.state){
             case GameState.initial:
                 break;
-            case GameState.preparation: 
+            case GameState.preparation:
                 this.playing.placeShip();
-                if(this.playing.allShipsPlaced){
+                if(this.allShipsPlaced){
                     this.switchPlayers();
-                    if(this.playing.allShipsPlaced){
-                        this.switchPlayers();
-                        this.setState(GameState.battle);
-                    }
-                    else
-                        this.showDialog('Ship positioning phase', `${this.playing.name} turn`);
-                }
+                    this.setState(GameState.battle);
+                } else if(this.playing.allShipsPlaced){
+                    this.switchPlayers();
+                    this.showDialog('Ship positioning phase', `${this.playing.name} turn`);
+                };
             case GameState.battle:
                 break;
         }
@@ -114,12 +112,16 @@ class Game {
     toggleCurrentPlayerShipRotation() {
         this.playing.toggleShipAlignment();
     }
+
+    get allShipsPlaced() {
+        return this.players[0].allShipsPlaced && this.players[1].allShipsPlaced;
+    }
 }
 
 class Player {
     constructor() {
         this.shipsToPlace = Array.from(REQUIRED_SHIPS, (shipSize, index) => new Battleship(shipSize, Alignment.vertical));
-        this.placedShips = [];
+        this.placedShips = new Array();
     }
 
     init(name, board){
@@ -127,7 +129,7 @@ class Player {
         this.html.className = 'column cross-axis-center';
         
         this.name = name;
-        let playerName = document.createElement('h2');
+        const playerName = document.createElement('h2');
         playerName.innerHTML = this.name;
 
         this.board = board;
@@ -135,7 +137,7 @@ class Player {
         this.html.appendChild(playerName);
         this.html.appendChild(this.board.html);
 
-        let playerContainer  = document.getElementById('player-container');
+        const playerContainer  = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
     }
 
@@ -145,7 +147,7 @@ class Player {
     }
 
     set shipAlignment(alignment) {
-        for(let ship of this.shipsToPlace)
+        for(const ship of this.shipsToPlace)
             ship.alignment = alignment;
     }
 
@@ -181,18 +183,13 @@ class Player {
     }
 
     determineShipTiles(tile) {
-        this.nextShip?.removeHighlight();
-        if(this.nextShip != null)
-            this.nextShip.tiles = [];
-        else return;
         if(tile == null || !this.board.tiles.includes(tile)) return;
-        this.nextShip.tiles = this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size);
-        this.nextShip?.highlight(this.canPlaceShip ? 'lightgreen' : 'rgba(255, 0, 0, 0.5)');
+        this.nextShip?.setPlacement(this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size));
+        this.nextShip?.highlight(this.canPlaceShip ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)');
     }
 
     placeShip() {
         if(this.canPlaceShip){
-            this.nextShip.removeHighlight();
             this.nextShip.place(this.board);
             this.placedShips.push(this.shipsToPlace.shift());
         }
@@ -201,33 +198,33 @@ class Player {
 
 class Board {
     constructor(cols, rows) {
-        let rowLabels = document.createElement('div');
+        const rowLabels = document.createElement('div');
         rowLabels.className = 'column cross-axis-end';
         rowLabels.style.marginRight = '5px';
         
-        let colLabels = document.createElement('div');
+        const colLabels = document.createElement('div');
         colLabels.className = 'row';
 
-        let grid = document.createElement('div');
+        const grid = document.createElement('div');
         grid.id = 'player-grid'
         grid.style.gridTemplateColumns = `repeat(${cols}, ${TILE_WIDTH}px)`;   
         grid.style.gridTemplateRows = `repeat(${rows}, ${TILE_HEIGHT}px)`;
         grid.style.position = 'relative';
 
-        this.tiles = [];
+        this.tiles = new Array();
         for(let row = 0; row < rows; row++){
-            let rowLabel = document.createElement('div');
+            const rowLabel = document.createElement('div');
             rowLabel.id = 'row-label';
             rowLabel.innerHTML = row + 1;
             rowLabels.appendChild(rowLabel);
             for(let col = 0; col < cols; col++){
                 if(row == 0) {
-                    let colLabel = document.createElement('div');
+                    const colLabel = document.createElement('div');
                     colLabel.id = 'col-label';
                     colLabel.innerHTML = COL_LABELS[col];
                     colLabels.appendChild(colLabel);
                 }
-                let tile = new Tile(col, row);
+                const tile = new Tile(col, row);
                 this.tiles.push(tile);
                 grid.appendChild(tile.html);
                 }
@@ -242,24 +239,33 @@ class Board {
         this.html.appendChild(grid);
     }
 
-    clear() {
-        for(const tile of this.tiles)
-            tile.html.style = null;
-    }
-
     getTilesInLine(startTile, alignment, length) {
-        let isVertical = alignment == Alignment.vertical;
-
         return this.tiles.filter(
-            (tile) =>  isVertical ? tile.col == startTile.col && tile.row >= startTile.row && tile.row < startTile.row + length
-            : tile.row == startTile.row && tile.col >= startTile.col && tile.col < startTile.col + length
+            (tile) => {
+                if(alignment == Alignment.vertical){
+                    return (
+                        tile.col == startTile.col &&
+                        tile.row >= startTile.row &&
+                        tile.row < startTile.row + length
+                    )
+                } else {
+                    return (
+                        tile.row == startTile.row &&
+                        tile.col >= startTile.col &&
+                        tile.col < startTile.col + length
+                    )
+                }
+            }
         );
     }
 
     getNeighboringTiles(tile) {
         return this.tiles.filter((item) => {
             if(item == tile) return false;
-            if (Math.abs(item.row - tile.row) <= 1 && Math.abs(item.col - tile.col) <= 1) {
+            if (
+                Math.abs(item.row - tile.row) <= 1 &&
+                Math.abs(item.col - tile.col) <= 1
+            ) {
                 return true;
             }
             return false;
@@ -267,18 +273,60 @@ class Board {
     }
 
     set ontileclicked(func) {
-        for(let tile of this.tiles)
+        for(const tile of this.tiles)
             tile.onclick = () => func(tile);
     }
 
     set ontilemouseover(func) {
-        for(let tile of this.tiles)
+        for(const tile of this.tiles)
             tile.onmouseover = () => func(tile);
     }
 
     set ontilemouseleave(func) {
-        for(let tile of this.tiles)
+        for(const tile of this.tiles)
             tile.onmouseleave = () => func(tile);
+    }
+}
+
+class Battleship {
+    constructor(size, alignment) {
+        this.size = size;
+        this.tiles = new Array();
+        this.hitTiles = new Array();
+        this.alignment = alignment;
+    }
+
+    setPlacement(tiles) {
+        this.unhighlight();
+        if(tiles == null) return this.tiles = new Array();
+        this.tiles = tiles;
+    }
+
+    highlight(color) {
+        for(const tile of this.tiles) {
+            tile.color = color;
+        }
+    }
+    
+    unhighlight() {
+        for(const tile of this.tiles) {
+            tile.html.removeAttribute('style');
+        }
+    }
+
+    place(board) {
+        this.unhighlight();
+        this.html = document.createElement('div');
+        this.html.className = 'ship';
+        this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
+        this.html.style.top = `${this.tiles[0].row * TILE_HEIGHT}px`;
+        this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
+        this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
+        this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
+        this.html.style.backgroundColor = 'red';
+
+        const grid = board.html.lastChild;
+        grid.appendChild(this.html);
     }
 }
 
@@ -312,44 +360,10 @@ const Alignment = {
     horizontal: 1,
 }
 
-class Battleship {
-    constructor(size, alignment) {
-        this.size = size;
-        this.tiles = [];
-        this.alignment = alignment;
-    }
-
-    highlight(color) {
-        for(let tile of this.tiles) {
-            tile.color = color;
-        }
-    }
-    
-    removeHighlight(color) {
-        for(let tile of this.tiles) {
-            tile.html.style = null;
-        }
-    }
-
-    place(board) {
-        this.html = document.createElement('div');
-        this.html.className = 'ship';
-        this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
-        this.html.style.top = `${this.tiles[0].row * TILE_HEIGHT}px`;
-        this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
-        this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
-        this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
-        this.html.style.backgroundColor = 'red';
-
-        const grid = board.html.lastChild;
-        grid.appendChild(this.html);
-    }
-}
-
 document.addEventListener(
     'DOMContentLoaded',
      () => {
-        let game = new Game();
+        const game = new Game();
         game.run();
      }
 );

@@ -57,7 +57,7 @@ body {
 
 .tile {
     border: 1px solid grey;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
 }
 
@@ -133,7 +133,7 @@ dialog::backdrop {
 .ship {
     position: absolute;
     animation-duration: 500ms;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
 #player-container {
