@@ -1,5 +1,6 @@
 body {
     font-family: 'Courier New', Courier, monospace;
+    height: 100%;
 }
 
 .row {
@@ -58,6 +59,7 @@ body {
 .tile {
     border: 1px solid grey;
     border-radius: 5px;
+    background-color: whitesmoke;
     cursor: pointer;
 }
 
@@ -106,6 +108,30 @@ body {
     }
 }
 
+@keyframes bounce {
+    33% {
+        transform: scale(85%);
+    }
+    66% {
+        transform: scale(110%);
+    }
+    80% {
+        transform: scale(90%);
+    }
+    to {
+        transform: scale(100%);
+    }
+}
+
+@keyframes pulse {
+    50% {
+        filter: opacity(0.5);
+    }
+    to {
+        filter: opacity(1.0);
+    }
+}
+
 dialog {
     border: none;
     outline: none;
@@ -134,10 +160,8 @@ dialog::backdrop {
     position: absolute;
     animation-duration: 500ms;
     border-radius: 5px;
-}
-
-#player-container {
-    margin-top: 20px;
+    pointer-events: none;
+    z-index: 1;
 }
 
 #row-label {
@@ -148,7 +172,6 @@ dialog::backdrop {
 
 #player-grid {
     display: inline-grid;
-    background-color: whitesmoke;
 }
 
 #col-label {

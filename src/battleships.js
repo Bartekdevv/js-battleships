@@ -3,8 +3,7 @@ const ROWS = 10;
 const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
-const REQUIRED_SHIPS = [5, 4, 4, 3, 3, 3, 2, 2, 2, 2];
-const TEST_SHIPS = [2];
+const REQUIRED_SHIPS = [5, 4, 3, 3, 2];
 
 const GameState = {
     initial: 0,
@@ -14,13 +13,19 @@ const GameState = {
 };
 
 class Game {
+    constructor() {
+        this.players = null;
+        this.inTurn = null;
+        this.notInTurn = null;
+    }
+
     init() {
         document.getElementById('player-container').innerHTML = '';
 
         this.players = [new Player(), new Player()];
 
         for(let i = 0; i < 2; i++){
-            this.players[i].init(`Player ${i+1}`, new Board(10, 10));
+            this.players[i].init(`Player ${i+1}`, new Board(COLS, ROWS));
             this.players[i].board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
             this.players[i].board.ontilemouseleave = (tile) => this.handleTileMouseLeave(tile);
             this.players[i].board.ontileclicked = (tile) => this.handleTileClick(tile);
@@ -29,7 +34,7 @@ class Game {
         this.inTurn = this.players[0];
         this.notInTurn = this.players[1];
 
-        document.addEventListener('keypress', (event) => event.key == 'r' ? this.toggleCurrentPlayerShipAlignment() : null);   
+        document.addEventListener('keypress', (event) => event.key == 'r' ? this.toggleCurrentPlayerShipAlignment() : null);
     }
 
     run() {
@@ -50,6 +55,7 @@ class Game {
                 break;
             case GameState.gameOver:
                 this.showDialog('Game Over', `${this.inTurn.name} has won the Game!`, null);
+                for(const player of this.players) player.showShips();
                 break;
         }
         const stateBtn = document.getElementById('state-btn');
@@ -83,6 +89,7 @@ class Game {
         switch(this.state){
             case GameState.preparation:
                 this.inTurn.placeShip();
+                this.handleTileMouseOver(tile);
                 if(this.allShipsPlaced){
                     this.inTurn.hideShips();
                     this.switchPlayers();
@@ -95,11 +102,15 @@ class Game {
                 break;
             case GameState.battle:
                 if(this.notInTurn.handleTileHit(tile)){
+                    this.inTurn.totalAttempts++;
                     if(this.notInTurn.allShipsDestroyed)
                         this.setState(GameState.gameOver);
                     else
                         this.switchPlayers();
                 }
+                console.clear();
+                console.log(`${this.players[0].name} : ${this.players[0].totalAttempts}, destroyed: ${this.players[0].destroyedShips.length}`);
+                console.log(`${this.players[1].name} : ${this.players[1].totalAttempts}, destroyed: ${this.players[1].destroyedShips.length}`);
                 break;
         }
     }
@@ -143,24 +154,25 @@ class Game {
 
 class Player {
     constructor() {
-        this.shipsToPlace = Array.from(TEST_SHIPS, (shipSize, _) => new Battleship(shipSize, Alignment.vertical));
+        this.shipsToPlace = Array.from(REQUIRED_SHIPS, (shipSize, index) => new Battleship(shipSize, Alignment.vertical));
         this.placedShips = new Array();
         this.destroyedShips = new Array();
+
+        this.totalAttempts = 0;
+        this.successfulHits = 0;
+        this.shipsSunk = 0;
     }
 
     init(name, board){
         this.html = document.createElement('div');
         this.html.className = 'column cross-axis-center';
-        
-        this.name = name;
-        const playerName = document.createElement('h2');
-        playerName.innerHTML = this.name;
 
+        this.name = name;
         this.board = board;
 
-        this.html.appendChild(playerName);
+        this.html.innerHTML += `<h2>${this.name}</h2>`;
         this.html.appendChild(this.board.html);
-
+        
         const playerContainer  = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
     }
@@ -200,7 +212,7 @@ class Player {
     }
 
     return true;
-}
+    }
 
     get allShipsPlaced() {
         return this.shipsToPlace.length == 0;
@@ -217,7 +229,7 @@ class Player {
 
     placeShip() {
         if(this.canPlaceShip){
-            this.nextShip.place(this.board);
+            this.nextShip.show(this.board, true);
             this.placedShips.push(this.shipsToPlace.shift());
         }
     }
@@ -225,6 +237,11 @@ class Player {
     hideShips(){
         for(const ship of this.placedShips)
             ship.hide();
+    }
+
+    showShips(){
+        for(const ship of this.placedShips)
+            ship.show(this.board);
     }
 
     handleTileHit(tile) {
@@ -259,10 +276,12 @@ class Board {
         colLabels.className = 'row';
 
         const grid = document.createElement('div');
-        grid.id = 'player-grid'
+        grid.id = 'player-grid';
         grid.style.gridTemplateColumns = `repeat(${cols}, ${TILE_WIDTH}px)`;   
         grid.style.gridTemplateRows = `repeat(${rows}, ${TILE_HEIGHT}px)`;
         grid.style.position = 'relative';
+
+        this.disabledTiles = new Array();
 
         this.tiles = new Array();
         for(let row = 0; row < rows; row++){
@@ -314,7 +333,6 @@ class Board {
 
     getNeighboringTiles(tile) {
         return this.tiles.filter((item) => {
-            if(item == tile) return false;
             if (
                 Math.abs(item.row - tile.row) <= 1 &&
                 Math.abs(item.col - tile.col) <= 1
@@ -371,6 +389,9 @@ class Battleship {
     highlight(color) {
         for(const tile of this.tiles) {
             tile.color = color;
+            tile.html.style.animation = 'pulse 1000ms forwards';
+            tile.html.style.animationIterationCount = 'infinite';
+            tile.html.style.zIndex = '2';
         }
     }
     
@@ -380,16 +401,16 @@ class Battleship {
         }
     }
 
-    place(board) {
+    show(board, animation) {
         this.unhighlight();
         this.html = document.createElement('div');
         this.html.className = 'ship';
-        this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
+        if(animation) this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
         this.html.style.top = `${this.tiles[0].row * TILE_HEIGHT}px`;
         this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
-        this.html.style.backgroundColor = 'red';
+        this.html.style.backgroundColor = 'black';
 
         const grid = board.html.lastChild;
         grid.appendChild(this.html);
@@ -401,11 +422,11 @@ class Battleship {
 
     markHit(tile) {
         tile.color = 'red';
-        this.hitTiles.push(this.tiles.splice(this.tiles.indexOf(tile), 1)[0]);
+        this.hitTiles.push(tile);
     }
 
     get hasSunk() {
-        return this.tiles.length == 0;
+        return this.tiles.length == this.hitTiles.length;
     }
 }
 
@@ -415,6 +436,13 @@ class Tile {
         this.html.className = 'tile';
         this.col = col;
         this.row = row;
+
+        this.html.addEventListener("animationstart", (evt) => {
+            if (evt.animationName !== "pulse") return;
+            const animation = evt.target.getAnimations().find((anim) => anim.animationName === 'pulse');
+            if(animation != undefined && animation != null) animation.startTime = 1;
+            
+        });
     }
 
     set onmouseover(func) {
@@ -435,7 +463,7 @@ class Tile {
 
     raise() {
         this.color = 'lightgrey';
-        this.html.style.animation = 'raise 500ms forwards';
+        this.html.style.animation = 'bounce 500ms forwards';
     }
 
     reset() {
@@ -453,7 +481,7 @@ class Tile {
 const Alignment = {
     vertical: 0,
     horizontal: 1,
-}
+};
 
 document.addEventListener(
     'DOMContentLoaded',
