@@ -192,7 +192,7 @@ class Player {
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
-        this.shipSizesToBePlaced = Array.from([2, 2]);
+        this.shipSizesToBePlaced = Array.from(REQUIRED_SHIPS);
         this.shipAlignment = Alignment.vertical;
         this.placeOn = new Array();
         this.placedShips = new Array();
@@ -440,6 +440,13 @@ class Battleship {
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
 
+        let p = document.createElement('img');
+        p.style.width = this.alignment == Alignment.vertical ? this.html.style.width : this.html.style.height;
+        p.style.transform = this.alignment == Alignment.horizontal ? 'rotateZ(90deg) translate(-50%, -25%)' : '';
+        p.src = `../assets/${this.size}.png`;
+        
+        this.html.appendChild(p);
+
         this.hitTiles = new Array();
     }
 
@@ -450,7 +457,7 @@ class Battleship {
     show(board, animate) {
         const grid = board.html.lastChild;
         if(Array.from(grid.childNodes).includes(this.html)) return;
-
+        this.html.style.animationName = '';
         if(animate) this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
         grid.appendChild(this.html);
     }
@@ -477,8 +484,8 @@ class Tile {
         this.col = col;
         this.row = row;
 
-        this.html.addEventListener("animationstart", (event) => {
-            if (event.animationName !== "pulse") return;
+        this.html.addEventListener('animationstart', (event) => {
+            if (event.animationName !== 'pulse') return;
             const animation = event.target.getAnimations().find((anim) => anim.animationName === 'pulse');
             if(animation != undefined && animation != null) animation.startTime = 1;
         });
