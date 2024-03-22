@@ -20,12 +20,24 @@ body {
     width: 100%;
 }
 
+.main-axis-space-evenly {
+    justify-content: space-evenly;
+}
+
 .cross-axis-center {
     align-items: center;
 }
 
+.cross-axis-expand {
+    align-items: stretch;
+}
+
 .cross-axis-end {
     align-items: end;
+}
+
+.text-center {
+    text-align: center;
 }
 
 #state-btn {
@@ -53,6 +65,59 @@ body {
     border-radius: 4px;
     background-color: whitesmoke;
     cursor: pointer;
+}
+
+dialog {
+    border: none;
+    outline: none;
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 32px 0px;
+    border-radius: 12px;
+    animation-name: drop;
+    animation-duration: 500ms;
+}
+
+dialog.hide {
+    animation-name: hide;
+    animation-duration: 500ms;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.ships {
+    min-width: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.ship {
+    position: absolute;
+    animation-duration: 500ms;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 1;
+    background-color: black;
+}
+
+#row-label {
+    display: flex;
+    align-items: center;
+    height: 100%;   
+}
+
+.player-grid {
+    display: inline-grid;
+    position: relative;
+}
+
+#col-label {
+    width: 100%;
+    text-align: center;
+}
+
+.bordered {
+    border: 1px solid black;
 }
 
 @keyframes slideInV {
@@ -124,52 +189,8 @@ body {
     }
 }
 
-dialog {
-    border: none;
-    outline: none;
-    box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 32px 0px;
-    border-radius: 12px;
-    animation-name: drop;
-    animation-duration: 500ms;
-}
-
-dialog.hide {
-    animation-name: hide;
-    animation-duration: 500ms;
-}
-
-dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
-.ships {
-    min-width: 50px;
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
-.ship {
-    position: absolute;
-    animation-duration: 500ms;
-    border-radius: 4px;
-
-    pointer-events: none;
-    z-index: 1;
-    background-color: black;
-    
-}
-
-#row-label {
-    display: flex;
-    align-items: center;
-    height: 100%;   
-}
-
-#player-grid {
-    display: inline-grid;
-}
-
-#col-label {
-    width: 100%;
-    text-align: center;
+@keyframes rotateY180 {
+    to {
+        transform: rotateY(180deg);
+    }
 }
