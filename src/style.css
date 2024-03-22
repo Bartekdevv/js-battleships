@@ -20,14 +20,6 @@ body {
     width: 100%;
 }
 
-.main-axis-space-between {
-    justify-content: space-between;
-}
-
-.main-axis-space-evenly {
-    justify-content: space-evenly;
-}
-
 .cross-axis-center {
     align-items: center;
 }
@@ -58,7 +50,7 @@ body {
 
 .tile {
     border: 1px solid grey;
-    border-radius: 5px;
+    border-radius: 4px;
     background-color: whitesmoke;
     cursor: pointer;
 }
@@ -159,9 +151,12 @@ dialog::backdrop {
 .ship {
     position: absolute;
     animation-duration: 500ms;
-    border-radius: 5px;
+    border-radius: 4px;
+
     pointer-events: none;
     z-index: 1;
+    background-color: black;
+    
 }
 
 #row-label {

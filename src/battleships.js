@@ -48,9 +48,11 @@ class Game {
                 this.init();
                 break;
             case GameState.preparation:
+                
                 this.showDialog('Ship Positioning Stage', `${this.inTurn.name} Turn`);
                 break;
             case GameState.battle:
+                
                 this.showDialog('Battle Stage', `${this.inTurn.name} Turn`);
                 break;
             case GameState.gameOver:
@@ -58,6 +60,7 @@ class Game {
                 for(const player of this.players) player.showShips();
                 break;
         }
+        
         const stateBtn = document.getElementById('state-btn');
         stateBtn.innerHTML = state == GameState.initial ? 'Start' : 'Reset';
         stateBtn.style.backgroundColor = state == GameState.initial ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
@@ -65,9 +68,11 @@ class Game {
         this.state = state;
     }
 
+    
     showDialog(title, content, duration = 2000) {
         const dialog = document.createElement('dialog');
-        dialog.className = 'column main-axis-space-between cross-axis-center';
+        
+        dialog.className = 'column cross-axis-center';
 
         dialog.innerHTML += `<h2>${title}</h2>`;
         dialog.innerHTML += `<h3>${content}</h3>`;
@@ -77,16 +82,19 @@ class Game {
         
         document.body.appendChild(dialog);
         dialog.showModal();
+        
         dialog.addEventListener(duration != null ? 'animationend' : 'click', () => {
             setTimeout(() => {
                 dialog.classList.add('hide');
                 dialog.addEventListener('animationend', () => dialog.remove());
+            
             }, duration);
         })
     }
 
     handleTileClick(tile) {
         switch(this.state){
+            
             case GameState.preparation:
                 this.inTurn.placeShip();
                 this.handleTileMouseOver(tile);
@@ -100,6 +108,7 @@ class Game {
                     this.showDialog('Ship Positioning Stage', `${this.inTurn.name} turn`);
                 };
                 break;
+            
             case GameState.battle:
                 if(this.notInTurn.handleTileHit(tile)){
                     this.inTurn.totalAttempts++;
@@ -107,7 +116,7 @@ class Game {
                         this.setState(GameState.gameOver);
                     else
                         this.switchPlayers();
-                }
+
                 console.clear();
                 console.log(`${this.players[0].name} : ${this.players[0].totalAttempts}, destroyed: ${this.players[0].destroyedShips.length}`);
                 console.log(`${this.players[1].name} : ${this.players[1].totalAttempts}, destroyed: ${this.players[1].destroyedShips.length}`);
@@ -117,6 +126,7 @@ class Game {
 
     handleTileMouseOver(tile) {
         switch(this.state){
+            
             case GameState.preparation: 
                 this.inTurn.determineShipTiles(tile);
                 break;
@@ -128,8 +138,10 @@ class Game {
 
     handleTileMouseLeave(tile) {
         switch(this.state){
+            
             case GameState.preparation:
                 this.inTurn.determineShipTiles(null);
+                break;
                 break;
             case GameState.battle:
                 this.notInTurn.board.unhighlightTile(tile);
@@ -166,14 +178,14 @@ class Player {
     init(name, board){
         this.html = document.createElement('div');
         this.html.className = 'column cross-axis-center';
+       
 
         this.name = name;
+
         this.board = board;
 
         this.html.innerHTML += `<h2>${this.name}</h2>`;
         this.html.appendChild(this.board.html);
-        
-        const playerContainer  = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
     }
 
@@ -183,6 +195,7 @@ class Player {
     }
 
     set shipAlignment(alignment) {
+        
         for(const ship of this.shipsToPlace)
             ship.alignment = alignment;
     }
@@ -198,17 +211,18 @@ class Player {
     get canPlaceShip() {
     if (this.nextShip == null || this.nextShip.tiles.length < this.nextShip.size) return false;
 
-    const neighboringTilesSet = new Set();
+    
+    const neighbouringTilesSet = new Set();
 
     for (const ship of this.placedShips) {
         for (const tile of ship.tiles) {
-            const neighboringTiles = this.board.getNeighboringTiles(tile);
-            neighboringTiles.forEach(t => neighboringTilesSet.add(t));
+            const neighbouringTiles = this.board.getNeighbouringTiles(tile);
+            neighbouringTiles.forEach(t => neighbouringTilesSet.add(t));
         }
     }
 
     for (const tile of this.nextShip.tiles) {
-        if (neighboringTilesSet.has(tile)) return false;
+        if (neighbouringTilesSet.has(tile)) return false;
     }
 
     return true;
@@ -226,10 +240,10 @@ class Player {
         this.nextShip?.setPlacement(this.board.getTilesInLine(tile, this.shipAlignment, this.nextShip.size));
         this.nextShip?.highlight(this.canPlaceShip ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)');
     }
-
+    
     placeShip() {
         if(this.canPlaceShip){
-            this.nextShip.show(this.board, true);
+            this.nextShip.place(this.board);
             this.placedShips.push(this.shipsToPlace.shift());
         }
     }
@@ -271,7 +285,7 @@ class Board {
         const rowLabels = document.createElement('div');
         rowLabels.className = 'column cross-axis-end';
         rowLabels.style.marginRight = '5px';
-        
+
         const colLabels = document.createElement('div');
         colLabels.className = 'row';
 
@@ -280,7 +294,6 @@ class Board {
         grid.style.gridTemplateColumns = `repeat(${cols}, ${TILE_WIDTH}px)`;   
         grid.style.gridTemplateRows = `repeat(${rows}, ${TILE_HEIGHT}px)`;
         grid.style.position = 'relative';
-
         this.disabledTiles = new Array();
 
         this.tiles = new Array();
@@ -296,6 +309,7 @@ class Board {
                     colLabel.innerHTML = COL_LABELS[col];
                     colLabels.appendChild(colLabel);
                 }
+
                 const tile = new Tile(col, row);
                 this.tiles.push(tile);
                 grid.appendChild(tile.html);
@@ -311,8 +325,8 @@ class Board {
         this.html.appendChild(grid);
     }
 
+
     getTilesInLine(startTile, alignment, length) {
-        return this.tiles.filter(
             (tile) => {
                 if(alignment == Alignment.vertical){
                     return (
@@ -331,14 +345,10 @@ class Board {
         );
     }
 
-    getNeighboringTiles(tile) {
+    
+    getNeighbouringTiles(tile) {
         return this.tiles.filter((item) => {
-            if (
-                Math.abs(item.row - tile.row) <= 1 &&
-                Math.abs(item.col - tile.col) <= 1
-            ) {
                 return true;
-            }
             return false;
         })
     }
@@ -354,16 +364,19 @@ class Board {
     }
 
     set ontileclicked(func) {
+        
         for(const tile of this.tiles)
             tile.onclick = () => func(tile);
     }
 
     set ontilemouseover(func) {
+        
         for(const tile of this.tiles)
             tile.onmouseover = () => func(tile);
     }
 
     set ontilemouseleave(func) {
+        
         for(const tile of this.tiles)
             tile.onmouseleave = () => func(tile);
     }
@@ -466,15 +479,8 @@ class Tile {
         this.html.style.animation = 'bounce 500ms forwards';
     }
 
-    reset() {
-        this.html.removeAttribute('style');
     }
 
-    disable() {
-        this.onclick = null;
-        this.onmouseover = null;
-        this.onmouseleave = null;
-        this.reset();
     }
 }
 
@@ -486,6 +492,7 @@ const Alignment = {
 document.addEventListener(
     'DOMContentLoaded',
      () => {
+        
         const game = new Game();
         game.run();
      }
