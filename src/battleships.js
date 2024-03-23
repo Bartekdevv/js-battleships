@@ -192,7 +192,7 @@ class Player {
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
-        this.shipSizesToBePlaced = Array.from(REQUIRED_SHIPS);
+        this.shipSizesToBePlaced = Array.from([2, 2]);
         this.shipAlignment = Alignment.vertical;
         this.placeOn = new Array();
         this.placedShips = new Array();
@@ -439,13 +439,6 @@ class Battleship {
         this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
-
-        let p = document.createElement('img');
-        p.style.width = this.alignment == Alignment.vertical ? this.html.style.width : this.html.style.height;
-        p.style.transform = this.alignment == Alignment.horizontal ? 'rotateZ(90deg) translate(-50%, -25%)' : '';
-        p.src = `../assets/${this.size}.png`;
-        
-        this.html.appendChild(p);
 
         this.hitTiles = new Array();
     }

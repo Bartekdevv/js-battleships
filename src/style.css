@@ -97,6 +97,7 @@ dialog::backdrop {
     border-radius: 4px;
     pointer-events: none;
     z-index: 1;
+    background-color: black;
 }
 
 #row-label {
