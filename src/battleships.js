@@ -17,7 +17,6 @@ class Game {
         document.getElementById('player-container').innerHTML = '';
 
         this.players = new Array();
-
         for(let i = 0; i < 2; i++){
             const player = new Player(`Player ${i+1}`, new Board(COLS, ROWS));
             player.board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
@@ -43,6 +42,7 @@ class Game {
                 this.init();
                 break;
             case GameState.preparation:
+                this.inTurn.updateShips();
                 this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} Turn</h3>`);
                 break;
             case GameState.battle:
@@ -68,14 +68,12 @@ class Game {
                 this.showDialog('Game Over!', row.outerHTML, null);
                 break;
         }
-        
         const stateBtn = document.getElementById('state-btn');
         stateBtn.innerHTML = state == GameState.initial ? 'Start' : 'Reset';
         stateBtn.style.backgroundColor = state == GameState.initial ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
         stateBtn.onclick = () => this.setState(state == GameState.initial ? GameState.preparation : GameState.initial);
         this.state = state;
     }
-
     
     showDialog(title, content, duration = 2000) {
         const dialog = document.createElement('dialog');
@@ -109,17 +107,23 @@ class Game {
     handleTileClick(tile) {
         switch(this.state){
             case GameState.preparation:
+                if(this.inTurn.allShipsPlaced) break;
                 this.inTurn.placeShip();
+                this.inTurn.updateShips();
                 this.handleTileMouseOver(tile);
                 if(this.inTurn.allShipsPlaced) {
-                    this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener('animationend', () => {
-                        this.inTurn.hideShips();
-                        this.switchPlayers();
-                        if(this.inTurn.allShipsPlaced)
-                            this.setState(GameState.battle);
-                        else
-                            this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
-                    })
+                    this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener(
+                        'animationend', 
+                        () => {
+                            this.inTurn.hideShips();
+                            this.switchPlayers();
+                            this.inTurn.updateShips();
+                            if(this.inTurn.allShipsPlaced)
+                                this.setState(GameState.battle);
+                            else
+                                this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
+                        }
+                    )
                 }
                 break;
             case GameState.battle:
@@ -187,7 +191,7 @@ class Player {
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
-        this.shipSizesToBePlaced = Array.from(SHIP_SIZES);
+        this.shipSizesToBePlaced = Array.from([3, 3, 2]);
         this.shipAlignment = Alignment.vertical;
         this.currentShipPlacement = new Array();
         this.placedShips = new Array();
@@ -320,6 +324,21 @@ class Player {
             count += ship.hitTiles.length;
 
         return count;
+    }
+
+    updateShips() {
+        let navbar = document.getElementsByClassName('navbar')[0];
+        navbar.innerHTML = '';
+        if(this.nextShipSize == null)
+        navbar.style.animation = 'navbarHide 500ms forwards';
+        else 
+        navbar.style.animation = 'navbarShow 500ms forwards';
+        for(const size of this.shipSizesToBePlaced) {
+            let s = document.createElement('img');
+            s.src = `../assets/${size}.png`;
+            s.style.transform = 'rotateZ(90deg) translateY(-100%)';
+            navbar.appendChild(s);
+        }
     }
 }
 
