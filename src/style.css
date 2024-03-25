@@ -15,11 +15,6 @@ body {
     align-items: flex-start;
 }
 
-.expanded {
-    height: 100%;
-    width: 100%;
-}
-
 .main-axis-space-evenly {
     justify-content: space-evenly;
 }
@@ -97,6 +92,7 @@ dialog::backdrop {
     border-radius: 4px;
     pointer-events: none;
     z-index: 1;
+    background-color: black;
 }
 
 #row-label {
@@ -115,8 +111,10 @@ dialog::backdrop {
     text-align: center;
 }
 
-.bordered {
-    border: 1px solid black;
+.horizontal-divider {
+    height: 1px;
+    width: 100%;
+    background-color: black;
 }
 
 @keyframes slideInV {
@@ -160,7 +158,7 @@ dialog::backdrop {
 
 @keyframes raise {
     to {
-        transform: scale(110%);
+        transform: scale(105%);
     }
 }
 

@@ -3,7 +3,7 @@ const ROWS = 10;
 const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
-const REQUIRED_SHIPS = [5, 4, 3, 3, 2];
+const SHIP_SIZES = [5, 4, 3, 3, 2];
 
 const GameState = {
     initial: 0,
@@ -13,14 +13,10 @@ const GameState = {
 };
 
 class Game {
-    constructor() {
-        this.players = new Array();
-        this.inTurn = null;
-        this.notInTurn = null;
-    }
-
     init() {
         document.getElementById('player-container').innerHTML = '';
+
+        this.players = new Array();
 
         for(let i = 0; i < 2; i++){
             const player = new Player(`Player ${i+1}`, new Board(COLS, ROWS));
@@ -54,7 +50,7 @@ class Game {
                 break;
             case GameState.gameOver:
                 const row = document.createElement('div');
-                row.className = 'row cross-axis-expand';
+                row.className = 'row';
                 row.style.gap = '50px';
 
                 for(const player of this.players){
@@ -89,8 +85,7 @@ class Game {
         dialog.innerHTML += `<h2>${title}</h2>`;
 
         const divider = document.createElement('div');
-        divider.style.height = '1px';
-        divider.style.backgroundColor = 'black';
+        divider.className = 'horizontal-divider';
 
         dialog.appendChild(divider);
         dialog.innerHTML += content;
@@ -101,13 +96,12 @@ class Game {
         }
         
         document.body.appendChild(dialog);
+
         dialog.showModal();
-        
         dialog.addEventListener(duration != null ? 'animationend' : 'click', () => {
             setTimeout(() => {
                 dialog.classList.add('hide');
                 dialog.addEventListener('animationend', () => dialog.remove());
-            
             }, duration);
         })
     }
@@ -117,15 +111,17 @@ class Game {
             case GameState.preparation:
                 this.inTurn.placeShip();
                 this.handleTileMouseOver(tile);
-                if(this.allShipsPlaced){
-                    this.inTurn.hideShips();
-                    this.switchPlayers();
-                    this.setState(GameState.battle);
-                } else if(this.inTurn.allShipsPlaced){
-                    this.inTurn.hideShips();
-                    this.switchPlayers();
-                    this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
-                };
+                this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener('animationend', () => {
+                    if(this.allShipsPlaced){
+                        this.inTurn.hideShips();
+                        this.switchPlayers();
+                        this.setState(GameState.battle);
+                    } else if(this.inTurn.allShipsPlaced){
+                        this.inTurn.hideShips();
+                        this.switchPlayers();
+                        this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
+                    };
+                })
                 break;
             case GameState.battle:
                 if(this.notInTurn.handleTileHit(tile)){
@@ -192,9 +188,9 @@ class Player {
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
-        this.shipSizesToBePlaced = Array.from(REQUIRED_SHIPS);
+        this.shipSizesToBePlaced = Array.from(SHIP_SIZES);
         this.shipAlignment = Alignment.vertical;
-        this.placeOn = new Array();
+        this.currentShipPlacement = new Array();
         this.placedShips = new Array();
         this.destroyedShips = new Array();
 
@@ -205,7 +201,7 @@ class Player {
 
     toggleShipAlignment() {
         this.shipAlignment = this.shipAlignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;
-        this.determineShipPlacement(this.placeOn[0]);
+        this.determineShipPlacement(this.currentShipPlacement[0]);
     }
 
     get nextShipSize() {
@@ -213,7 +209,7 @@ class Player {
     }
 
     get canPlaceShip() {
-    if (this.nextShipSize == null || this.placeOn.length < this.nextShipSize) return false;
+    if (this.nextShipSize == null || this.currentShipPlacement.length < this.nextShipSize) return false;
 
     const neighbouringTilesSet = new Set();
 
@@ -224,7 +220,7 @@ class Player {
         }
     }
 
-    for (const tile of this.placeOn)
+    for (const tile of this.currentShipPlacement)
         if (neighbouringTilesSet.has(tile)) return false;
 
     return true;
@@ -236,15 +232,15 @@ class Player {
 
     determineShipPlacement(tile) {
         this.unhighlightPlacement();
-        if(tile == null || !this.board.tiles.includes(tile)) return this.placeOn = [];
-        this.placeOn = this.board.getTilesInLine(tile, this.shipAlignment, this.nextShipSize);
+        if(tile == null || !this.board.tiles.includes(tile)) return this.currentShipPlacement = [];
+        this.currentShipPlacement = this.board.getTilesInLine(tile, this.shipAlignment, this.nextShipSize);
         this.highlightPlacement(this.canPlaceShip ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)');
     }
     
     placeShip() {
         if(this.canPlaceShip){
             this.unhighlightPlacement();
-            let ship = new Battleship(this.placeOn, this.shipAlignment);
+            let ship = new Battleship(this.currentShipPlacement, this.shipAlignment);
             ship.show(this.board, true);
             this.placedShips.push(ship);
             this.shipSizesToBePlaced.shift();
@@ -293,12 +289,11 @@ class Player {
             }
         }
         tile.html.style.animation = 'rotateY180 500ms forwards';
-        tile.html.addEventListener('animationend', () => tile.html.style.removeProperty('animation'));
         return true;
     }
 
     highlightPlacement(color){
-        for(const tile of this.placeOn) {
+        for(const tile of this.currentShipPlacement) {
             tile.color = color;
             tile.html.style.animation = 'pulse 1000ms forwards';
             tile.html.style.animationIterationCount = 'infinite';
@@ -307,7 +302,7 @@ class Player {
     }
 
     unhighlightPlacement(){
-        for(const tile of this.placeOn) {
+        for(const tile of this.currentShipPlacement) {
             tile.resetStyle();
         }
     }
@@ -372,7 +367,6 @@ class Board {
         this.html.appendChild(grid);
     }
 
-
     getTilesInLine(startTile, alignment, length) {
             return this.tiles.filter(
                 (tile) => {
@@ -392,7 +386,6 @@ class Board {
             )
     }
 
-    
     getNeighbouringTiles(tile) {
         return this.tiles.filter((item) => {
             if (
@@ -440,13 +433,6 @@ class Battleship {
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
 
-        let p = document.createElement('img');
-        p.style.width = this.alignment == Alignment.vertical ? this.html.style.width : this.html.style.height;
-        p.style.transform = this.alignment == Alignment.horizontal ? 'rotateZ(90deg) translate(-50%, -25%)' : '';
-        p.src = `../assets/${this.size}.png`;
-        
-        this.html.appendChild(p);
-
         this.hitTiles = new Array();
     }
 
@@ -487,7 +473,7 @@ class Tile {
         this.html.addEventListener('animationstart', (event) => {
             if (event.animationName !== 'pulse') return;
             const animation = event.target.getAnimations().find((anim) => anim.animationName === 'pulse');
-            if(animation != undefined && animation != null) animation.startTime = 1;
+            if(animation != null) animation.startTime = 1;
         });
     }
 
