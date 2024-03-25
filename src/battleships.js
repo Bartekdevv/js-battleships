@@ -28,8 +28,8 @@ class Game {
 
         this.inTurn = this.players[0];
         this.notInTurn = this.players[1];
-
-        document.addEventListener('keypress', (event) => event.key == 'r' ? this.toggleCurrentPlayerShipAlignment() : null);
+        
+        document.onkeydown = (event) => this.handleKeyEvents(event);
     }
 
     run() {
@@ -164,8 +164,12 @@ class Game {
         this.inTurn = temp;
     }
 
-    toggleCurrentPlayerShipAlignment() {
-        this.inTurn.toggleShipAlignment();
+    handleKeyEvents(event) {
+        switch(event.key) {
+            case 'r':
+                this.inTurn.toggleShipAlignment();
+                break;
+        }
     }
 }
 
@@ -430,10 +434,10 @@ class Battleship {
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
 
         let img = document.createElement('img');
-        img.style.transformOrigin = 'top left';
+		img.src = `../assets/${this.size}.png`;
         img.style.width = `${TILE_WIDTH}px`;
+        img.style.transformOrigin = 'top left';
         img.style.transform = alignment == Alignment.horizontal ? `rotateZ(90deg)  translateY(-100%)` : '';
-        img.src = `../assets/${this.size}.png`;
 
         this.html.appendChild(img);
 
