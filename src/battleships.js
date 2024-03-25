@@ -3,7 +3,7 @@ const ROWS = 10;
 const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
-const SHIP_SIZES = [5, 4, 3, 3, 2];
+const SHIP_SIZES = [2, 3, 3, 4, 5];
 
 const GameState = {
     initial: 0,
@@ -111,17 +111,16 @@ class Game {
             case GameState.preparation:
                 this.inTurn.placeShip();
                 this.handleTileMouseOver(tile);
-                this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener('animationend', () => {
-                    if(this.allShipsPlaced){
+                if(this.inTurn.allShipsPlaced) {
+                    this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener('animationend', () => {
                         this.inTurn.hideShips();
                         this.switchPlayers();
-                        this.setState(GameState.battle);
-                    } else if(this.inTurn.allShipsPlaced){
-                        this.inTurn.hideShips();
-                        this.switchPlayers();
-                        this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
-                    };
-                })
+                        if(this.inTurn.allShipsPlaced)
+                            this.setState(GameState.battle);
+                        else
+                            this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
+                    })
+                }
                 break;
             case GameState.battle:
                 if(this.notInTurn.handleTileHit(tile)){
@@ -167,10 +166,6 @@ class Game {
 
     toggleCurrentPlayerShipAlignment() {
         this.inTurn.toggleShipAlignment();
-    }
-
-    get allShipsPlaced() {
-        return this.inTurn.allShipsPlaced && this.notInTurn.allShipsPlaced;
     }
 }
 
@@ -433,6 +428,14 @@ class Battleship {
         this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
         this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
+
+        let img = document.createElement('img');
+        img.style.transformOrigin = 'top left';
+        img.style.width = `${TILE_WIDTH}px`;
+        img.style.transform = alignment == Alignment.horizontal ? `rotateZ(90deg)  translateY(-100%)` : '';
+        img.src = `../assets/${this.size}.png`;
+
+        this.html.appendChild(img);
 
         this.hitTiles = new Array();
     }

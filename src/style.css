@@ -92,7 +92,6 @@ dialog::backdrop {
     border-radius: 4px;
     pointer-events: none;
     z-index: 1;
-    background-color: black;
 }
 
 #row-label {
@@ -119,7 +118,7 @@ dialog::backdrop {
 
 @keyframes slideInV {
     from {
-        transform: translateY(-100%);
+        transform: translateY(100%);
         }
     to {
         transform: translateY(0%);
