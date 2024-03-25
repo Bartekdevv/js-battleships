@@ -200,7 +200,7 @@ class Player {
     }
 
     toggleShipAlignment() {
-        this.shipAlignment = this.shipAlignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;
+        this.shipAlignment = this.shipAlignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;;
         this.determineShipPlacement(this.currentShipPlacement[0]);
     }
 
@@ -385,6 +385,7 @@ class Board {
                 }
             )
     }
+
 
     getNeighbouringTiles(tile) {
         return this.tiles.filter((item) => {
