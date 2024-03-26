@@ -3,7 +3,7 @@ const ROWS = 10;
 const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
-const SHIP_SIZES = [2, 3, 3, 4, 5];
+const SHIP_SIZES = [5, 4, 3, 3, 2];
 
 const GameState = {
     initial: 0,
@@ -27,8 +27,8 @@ class Game {
 
         this.inTurn = this.players[0];
         this.notInTurn = this.players[1];
-        
-        document.onkeydown = (event) => this.handleKeyEvents(event);
+
+        onkeydown = (event) => this.handleKeyEvents(event);
     }
 
     run() {
@@ -42,10 +42,11 @@ class Game {
                 this.init();
                 break;
             case GameState.preparation:
-                this.inTurn.updateShips();
+                this.inTurn.updateUnplacedShips();
                 this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} Turn</h3>`);
                 break;
             case GameState.battle:
+                this.switchPlayers();
                 this.showDialog('Battle Stage', `<h3>${this.inTurn.name} Turn</h3>`);
                 break;
             case GameState.gameOver:
@@ -92,14 +93,13 @@ class Game {
             dialog.appendChild(divider);
             dialog.innerHTML += '<h5> click anywhere to continue... </h5>';
         }
-        
-        document.body.appendChild(dialog);
 
+        document.body.appendChild(dialog);
         dialog.showModal();
         dialog.addEventListener(duration != null ? 'animationend' : 'click', () => {
             setTimeout(() => {
                 dialog.classList.add('hide');
-                dialog.addEventListener('animationend', () => dialog.remove());
+                dialog.onanimationend = () => dialog.remove();
             }, duration);
         })
     }
@@ -109,19 +109,17 @@ class Game {
             case GameState.preparation:
                 if(this.inTurn.allShipsPlaced) break;
                 this.inTurn.placeShip();
-                this.inTurn.updateShips();
+                this.inTurn.updateUnplacedShips();
                 this.handleTileMouseOver(tile);
                 if(this.inTurn.allShipsPlaced) {
                     this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener(
                         'animationend', 
                         () => {
-                            this.inTurn.hideShips();
+                            if(this.notInTurn.allShipsPlaced)
+                                return this.setState(GameState.battle);
                             this.switchPlayers();
-                            this.inTurn.updateShips();
-                            if(this.inTurn.allShipsPlaced)
-                                this.setState(GameState.battle);
-                            else
-                                this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
+                            this.inTurn.updateUnplacedShips();
+                            this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
                         }
                     )
                 }
@@ -142,7 +140,7 @@ class Game {
 
     handleTileMouseOver(tile) {
         switch(this.state){
-            case GameState.preparation: 
+            case GameState.preparation:
                 this.inTurn.determineShipPlacement(tile);
                 break;
             case GameState.battle:
@@ -191,7 +189,7 @@ class Player {
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
-        this.shipSizesToBePlaced = Array.from([3, 3, 2]);
+        this.shipSizesToBePlaced = Array.from(SHIP_SIZES);
         this.shipAlignment = Alignment.vertical;
         this.currentShipPlacement = new Array();
         this.placedShips = new Array();
@@ -326,19 +324,27 @@ class Player {
         return count;
     }
 
-    updateShips() {
-        let navbar = document.getElementsByClassName('navbar')[0];
-        navbar.innerHTML = '';
+    updateUnplacedShips() {
+        const topbar = document.getElementById('topbar');
+        const content = document.createElement('div');
+
         if(this.nextShipSize == null)
-        navbar.style.animation = 'navbarHide 500ms forwards';
+            topbar.style.animation = 'topbarHide 500ms forwards';
         else 
-        navbar.style.animation = 'navbarShow 500ms forwards';
+            topbar.style.animation = 'topbarShow 500ms forwards';
+
         for(const size of this.shipSizesToBePlaced) {
-            let s = document.createElement('img');
-            s.src = `../assets/${size}.png`;
-            s.style.transform = 'rotateZ(90deg) translateY(-100%)';
-            navbar.appendChild(s);
+            let img = document.createElement('img');
+            img.style.height = `${size * TILE_HEIGHT}px`;
+            img.style.width = `${TILE_WIDTH}px`;
+            img.style.paddingRight = img.style.height;
+            img.style.transformOrigin = 'top left';
+            img.style.transform = `rotateZ(90deg) translateY(-100%)`;
+            img.src = `../assets/${size}.png`;
+            content.appendChild(img);
         }
+
+        topbar.innerHTML = content.innerHTML;
     }
 }
 
