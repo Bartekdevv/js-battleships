@@ -14,6 +14,7 @@ body {
     right: 0;
     transform: translateY(-100%);
     background-color: rgba(0, 0, 0, 0.2);
+    pointer-events: none;
 }
 
 .row {
@@ -211,9 +212,6 @@ dialog::backdrop {
 }
 
 @keyframes topbarHide {
-    from {
-        transform: translateY(0%);
-    }
     to {
         transform: translateY(-100%);
     }

@@ -15,6 +15,7 @@ const GameState = {
 class Game {
     init() {
         document.getElementById('player-container').innerHTML = '';
+        document.getElementById('topbar').style.animation = 'topbarHide 500ms forwards';
 
         this.players = new Array();
         for(let i = 0; i < 2; i++){
@@ -115,6 +116,7 @@ class Game {
                     this.inTurn.placedShips[this.inTurn.placedShips.length - 1].html.addEventListener(
                         'animationend', 
                         () => {
+                            this.inTurn.hideShips();
                             if(this.notInTurn.allShipsPlaced)
                                 return this.setState(GameState.battle);
                             this.switchPlayers();
