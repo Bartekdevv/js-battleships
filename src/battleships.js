@@ -1,17 +1,21 @@
-const COLS = 10;
-const ROWS = 10;
-const TILE_WIDTH = 45;
-const TILE_HEIGHT = 45;
+const BOARD_SIZE = 10;
+const TILE_SIZE = 45;
 const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
                     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 const SHIP_SIZES = [5, 4, 3, 3, 2];
 
 const GameState = {
-    initial: 0,
-    preparation: 1,
-    battle: 2,
-    gameOver: 3
+    Initial: 'Initial',
+    Preparation: 'Preparation',
+    Battle: 'Battle',
+    GameOver: 'GameOver'
 };
+
+const Alignment = {
+    Vertical: 'Vertical',
+    Horizontal: 'Horizontal'
+};
+
 
 class Game {
     init() {
@@ -20,7 +24,7 @@ class Game {
 
         this.players = new Array();
         for(let i = 1; i < 3; i++){
-            const player = new Player(`Player ${i}`, new Board(COLS, ROWS));
+            const player = new Player(`Player ${i}`, new Board(BOARD_SIZE));
             player.board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
             player.board.ontilemouseleave = (tile) => this.handleTileMouseLeave(tile);
             player.board.ontileclicked = (tile) => this.handleTileClick(tile);
@@ -35,24 +39,24 @@ class Game {
     }
 
     run() {
-        this.setState(GameState.initial);
+        this.setState(GameState.Initial);
     }
  
     setState(state) {
         if(this.state == state) return;
         switch(state) {
-            case GameState.initial:
+            case GameState.Initial:
                 this.init();
                 break;
-            case GameState.preparation:
+            case GameState.Preparation:
                 this.inTurn.updateUnplacedShips();
                 this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} Turn</h3>`);
                 break;
-            case GameState.battle:
+            case GameState.Battle:
                 this.switchPlayers();
                 this.showDialog('Battle Stage', `<h3>${this.inTurn.name} Turn</h3>`);
                 break;
-            case GameState.gameOver:
+            case GameState.GameOver:
                 const row = document.createElement('div');
                 row.className = 'row';
                 row.style.gap = '50px';
@@ -73,9 +77,9 @@ class Game {
                 break;
         }
         const stateBtn = document.getElementById('state-btn');
-        stateBtn.innerHTML = state == GameState.initial ? 'Start' : 'Reset';
-        stateBtn.style.backgroundColor = state == GameState.initial ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
-        stateBtn.onclick = () => this.setState(state == GameState.initial ? GameState.preparation : GameState.initial);
+        stateBtn.innerHTML = state == GameState.Initial ? 'Start' : 'Reset';
+        stateBtn.style.backgroundColor = state == GameState.Initial ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
+        stateBtn.onclick = () => this.setState(state == GameState.Initial ? GameState.Preparation : GameState.Initial);
         this.state = state;
     }
     
@@ -109,7 +113,7 @@ class Game {
 
     handleTileClick(tile) {
         switch(this.state){
-            case GameState.preparation:
+            case GameState.Preparation:
                 if(this.inTurn.allShipsPlaced) break;
                 this.inTurn.placeShip();
                 this.inTurn.updateUnplacedShips();
@@ -120,7 +124,7 @@ class Game {
                         () => {
                             this.inTurn.hideShips();
                             if(this.notInTurn.allShipsPlaced)
-                                return this.setState(GameState.battle);
+                                return this.setState(GameState.Battle);
                             this.switchPlayers();
                             this.inTurn.updateUnplacedShips();
                             this.showDialog('Ship Positioning Stage', `<h3>${this.inTurn.name} turn</h3>`);
@@ -128,13 +132,13 @@ class Game {
                     )
                 }
                 break;
-            case GameState.battle:
+            case GameState.Battle:
                 if(this.notInTurn.handleTileHit(tile)){
                     this.inTurn.totalAttempts++;
                     this.inTurn.successfulHits = this.notInTurn.hitTileCount;
                     this.inTurn.shipsDestroyed = this.notInTurn.destroyedShips.length;
                     if(this.notInTurn.allShipsDestroyed)
-                        this.setState(GameState.gameOver);
+                        this.setState(GameState.GameOver);
                     else {
                         this.inTurn.hideShips();
                         this.switchPlayers();
@@ -146,10 +150,10 @@ class Game {
 
     handleTileMouseOver(tile) {
         switch(this.state){
-            case GameState.preparation:
+            case GameState.Preparation:
                 this.inTurn.determineShipPlacement(tile);
                 break;
-            case GameState.battle:
+            case GameState.Battle:
                 this.notInTurn.board.highlightTile(tile);
                 break;
         }
@@ -157,10 +161,10 @@ class Game {
 
     handleTileMouseLeave(tile) {
         switch(this.state){
-            case GameState.preparation:
+            case GameState.Preparation:
                 this.inTurn.determineShipPlacement(null);
                 break;
-            case GameState.battle:
+            case GameState.Battle:
                 this.notInTurn.board.unhighlightTile(tile);
                 break;
         }
@@ -175,11 +179,11 @@ class Game {
     handleKeyEvents(event) {
         switch(event.key) {
             case 'r':
-                if(event.type == 'keydown' && this.state == GameState.preparation)
+                if(event.type == 'keydown' && this.state == GameState.Preparation)
                     this.inTurn.toggleShipAlignment();
                 break;
             case 's':
-                if(this.state == GameState.battle)
+                if(this.state == GameState.Battle)
                     if(event.type == 'keydown')
                         this.inTurn.showShips();
                     else 
@@ -203,7 +207,7 @@ class Player {
         playerContainer.appendChild(this.html);
 
         this.shipSizesToBePlaced = Array.from(SHIP_SIZES);
-        this.shipAlignment = Alignment.vertical;
+        this.shipAlignment = Alignment.Vertical;
         this.currentShipPlacement = new Array();
         this.placedShips = new Array();
         this.destroyedShips = new Array();
@@ -222,7 +226,7 @@ class Player {
     }
 
     toggleShipAlignment() {
-        this.shipAlignment = this.shipAlignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;;
+        this.shipAlignment = this.shipAlignment == Alignment.Vertical ? Alignment.Horizontal : Alignment.Vertical;;
         this.determineShipPlacement(this.currentShipPlacement[0]);
     }
 
@@ -340,8 +344,8 @@ class Player {
 
         for(const size of this.shipSizesToBePlaced) {
             let img = document.createElement('img');
-            img.style.height = `${size * TILE_HEIGHT}px`;
-            img.style.width = `${TILE_WIDTH}px`;
+            img.style.height = `${size * TILE_SIZE}px`;
+            img.style.width = `${TILE_SIZE}px`;
             img.style.paddingRight = img.style.height;
             img.style.transformOrigin = 'top left';
             img.style.transform = `rotateZ(90deg) translateY(-100%)`;
@@ -353,7 +357,7 @@ class Player {
 }
 
 class Board {
-    constructor(cols, rows) {
+    constructor(size) {
         const rowLabels = document.createElement('div');
         rowLabels.className = 'column cross-axis-end';
         rowLabels.style.marginRight = '5px';
@@ -363,17 +367,17 @@ class Board {
 
         const grid = document.createElement('div');
         grid.className = 'player-grid';
-        grid.style.gridTemplateColumns = `repeat(${cols}, ${TILE_WIDTH}px)`;   
-        grid.style.gridTemplateRows = `repeat(${rows}, ${TILE_HEIGHT}px)`;
+        grid.style.gridTemplateColumns = `repeat(${size}, ${TILE_SIZE}px)`;   
+        grid.style.gridTemplateRows = `repeat(${size}, ${TILE_SIZE}px)`;
 
         this.disabledTiles = new Array();
         this.tiles = new Array();
-        for(let row = 0; row < rows; row++){
+        for(let row = 0; row < size; row++){
             const rowLabel = document.createElement('div');
             rowLabel.id = 'row-label';
             rowLabel.innerHTML = row + 1;
             rowLabels.appendChild(rowLabel);
-            for(let col = 0; col < cols; col++){
+            for(let col = 0; col < size; col++){
                 if(row == 0) {
                     const colLabel = document.createElement('div');
                     colLabel.id = 'col-label';
@@ -398,7 +402,7 @@ class Board {
     getTilesInLine(startTile, alignment, length) {
             return this.tiles.filter(
                 (tile) => {
-                    if(alignment == Alignment.vertical) 
+                    if(alignment == Alignment.Vertical) 
                         return (
                             tile.col == startTile.col &&
                             tile.row >= startTile.row &&
@@ -456,16 +460,16 @@ class Battleship {
         this.tiles = tiles,
         this.html = document.createElement('div');
         this.html.className = 'ship';
-        this.html.style.top = `${this.tiles[0].row * TILE_HEIGHT}px`;
-        this.html.style.left = `${this.tiles[0].col * TILE_WIDTH}px`;
-        this.html.style.width = `${this.alignment == Alignment.vertical ? TILE_WIDTH : this.size * TILE_WIDTH}px`;
-        this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
+        this.html.style.top = `${this.tiles[0].row * TILE_SIZE}px`;
+        this.html.style.left = `${this.tiles[0].col * TILE_SIZE}px`;
+        this.html.style.width = `${this.alignment == Alignment.Vertical ? TILE_SIZE : this.size * TILE_SIZE}px`;
+        this.html.style.height = `${this.alignment != Alignment.Vertical ? TILE_SIZE : this.size * TILE_SIZE}px`;
 
         let img = document.createElement('img');
 		img.src = `../assets/images/${this.size}.png`;
-        img.style.width = `${TILE_WIDTH}px`;
+        img.style.width = `${TILE_SIZE}px`;
         img.style.transformOrigin = 'top left';
-        img.style.transform = alignment == Alignment.horizontal ? `rotateZ(90deg)  translateY(-100%)` : '';
+        img.style.transform = alignment == Alignment.Horizontal ? `rotateZ(90deg)  translateY(-100%)` : '';
 
         this.html.appendChild(img);
 
@@ -480,7 +484,7 @@ class Battleship {
         const grid = board.html.lastChild;
         if(Array.from(grid.childNodes).includes(this.html)) return;
         this.html.style.animationName = '';
-        if(animate) this.html.style.animationName = this.alignment == Alignment.vertical ? 'slideInV' : 'slideInH';
+        if(animate) this.html.style.animationName = this.alignment == Alignment.Vertical ? 'slideInV' : 'slideInH';
         grid.appendChild(this.html);
     }
 
@@ -544,11 +548,6 @@ class Tile {
         this.onmouseleave = null;
     }
 }
-
-const Alignment = {
-    vertical: 0,
-    horizontal: 1,
-};
 
 document.addEventListener(
     'DOMContentLoaded',
