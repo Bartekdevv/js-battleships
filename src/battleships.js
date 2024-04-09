@@ -2,7 +2,8 @@ const COLS = 10;
 const ROWS = 10;
 const TILE_WIDTH = 45;
 const TILE_HEIGHT = 45;
-const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'w', 'x', 'y', 'z'];
+const COL_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 const SHIP_SIZES = [5, 4, 3, 3, 2];
 
 const GameState = {
@@ -15,7 +16,7 @@ const GameState = {
 class Game {
     init() {
         document.getElementById('player-container').innerHTML = '';
-        document.getElementById('topbar').style.animation = 'topbarHide 500ms forwards';
+        document.getElementById('topbar').removeAttribute('style');
 
         this.players = new Array();
         for(let i = 0; i < 2; i++){
@@ -30,6 +31,7 @@ class Game {
         this.notInTurn = this.players[1];
 
         onkeydown = (event) => this.handleKeyEvents(event);
+        onkeyup = (event) => this.handleKeyEvents(event);
     }
 
     run() {
@@ -64,7 +66,7 @@ class Game {
                     column.innerHTML += `<p>Ships Destroyed: ${player.shipsDestroyed}</p>`;
                     column.innerHTML += `<p>Accuracy: ${(player.successfulHits / player.totalAttempts * 100).toFixed(2)}%</p>`;
                     row.appendChild(column);
-                    player.showAllShips();
+                    player.showShips();
                 }
 
                 this.showDialog('Game Over!', row.outerHTML, null);
@@ -90,14 +92,14 @@ class Game {
         dialog.appendChild(divider);
         dialog.innerHTML += content;
         
-        if(duration == null){
+        if(!duration){
             dialog.appendChild(divider);
             dialog.innerHTML += '<h5> click anywhere to continue... </h5>';
         }
 
         document.body.appendChild(dialog);
         dialog.showModal();
-        dialog.addEventListener(duration != null ? 'animationend' : 'click', () => {
+        dialog.addEventListener(!duration ? 'click' : 'animationend', () => {
             setTimeout(() => {
                 dialog.classList.add('hide');
                 dialog.onanimationend = () => dialog.remove();
@@ -133,8 +135,10 @@ class Game {
                     this.inTurn.shipsDestroyed = this.notInTurn.destroyedShips.length;
                     if(this.notInTurn.allShipsDestroyed)
                         this.setState(GameState.gameOver);
-                    else
+                    else {
+                        this.inTurn.hideShips();
                         this.switchPlayers();
+                    }
                 break;
             }
         }
@@ -171,7 +175,15 @@ class Game {
     handleKeyEvents(event) {
         switch(event.key) {
             case 'r':
-                this.inTurn.toggleShipAlignment();
+                if(event.type == 'keydown' && this.state == GameState.preparation)
+                    this.inTurn.toggleShipAlignment();
+                break;
+            case 's':
+                if(this.state == GameState.battle)
+                    if(event.type == 'keydown')
+                        this.inTurn.showShips();
+                    else 
+                        this.inTurn.hideShips();
                 break;
         }
     }
@@ -179,15 +191,14 @@ class Game {
 
 class Player {
     constructor(name, board) {
-        this.name = name;
         this.board = board;
 
         this.html = document.createElement('div');
         this.html.className = 'column cross-axis-center';
 
-        this.html.innerHTML += `<h2>${this.name}</h2>`;
+        this.html.appendChild(document.createElement('h2'));
+        this.name = name;
         this.html.appendChild(this.board.html);
-
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
 
@@ -202,6 +213,14 @@ class Player {
         this.shipsDestroyed = 0;
     }
 
+    set name(name) {
+        this.html.childNodes[0].innerText = name;
+    }
+
+    get name() {
+        return this.html.childNodes[0]?.innerText;
+    }
+
     toggleShipAlignment() {
         this.shipAlignment = this.shipAlignment == Alignment.vertical ? Alignment.horizontal : Alignment.vertical;;
         this.determineShipPlacement(this.currentShipPlacement[0]);
@@ -212,7 +231,7 @@ class Player {
     }
 
     get canPlaceShip() {
-    if (this.nextShipSize == null || this.currentShipPlacement.length < this.nextShipSize) return false;
+    if (!this.nextShipSize || this.currentShipPlacement.length < this.nextShipSize) return false;
 
     const neighbouringTilesSet = new Set();
 
@@ -235,7 +254,7 @@ class Player {
 
     determineShipPlacement(tile) {
         this.unhighlightPlacement();
-        if(tile == null || !this.board.tiles.includes(tile)) return this.currentShipPlacement = [];
+        if(!tile || !this.board.tiles.includes(tile)) return this.currentShipPlacement = [];
         this.currentShipPlacement = this.board.getTilesInLine(tile, this.shipAlignment, this.nextShipSize);
         this.highlightPlacement(this.canPlaceShip ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)');
     }
@@ -251,29 +270,13 @@ class Player {
     }
 
     hideShips(){
-        for(const ship of this.placedShips)
+        for(const ship of this.placedShips.concat(this.destroyedShips))
             ship.hide();
     }
 
-    showPlacedShips(){
-        for(const ship of this.placedShips){
-            for(const tile of ship.tiles)
-                tile.resetStyle();
+    showShips(){
+        for(const ship of this.placedShips.concat(this.destroyedShips))
             ship.show(this.board, false);
-        }
-    }
-
-    showDestroyedShips(){
-        for(const ship of this.destroyedShips){
-            for(const tile of ship.tiles)
-                tile.resetStyle();
-            ship.show(this.board, false);
-        }
-    }
-
-    showAllShips() {
-        this.showPlacedShips();
-        this.showDestroyedShips();
     }
 
     handleTileHit(tile) {
@@ -330,7 +333,7 @@ class Player {
         const topbar = document.getElementById('topbar');
         const content = document.createElement('div');
 
-        if(this.nextShipSize == null)
+        if(!this.nextShipSize)
             topbar.style.animation = 'topbarHide 500ms forwards';
         else 
             topbar.style.animation = 'topbarShow 500ms forwards';
@@ -342,7 +345,7 @@ class Player {
             img.style.paddingRight = img.style.height;
             img.style.transformOrigin = 'top left';
             img.style.transform = `rotateZ(90deg) translateY(-100%)`;
-            img.src = `../assets/${size}.png`;
+            img.src = `../assets/images/${size}.png`;
             content.appendChild(img);
         }
 
@@ -412,7 +415,6 @@ class Board {
             )
     }
 
-
     getNeighbouringTiles(tile) {
         return this.tiles.filter((item) => {
             if (
@@ -425,7 +427,7 @@ class Board {
 
     highlightTile(tile) {
         if(!this.tiles.includes(tile)) return;
-        tile.raise();
+        tile.highlight();
     }
 
     unhighlightTile(tile) {
@@ -461,7 +463,7 @@ class Battleship {
         this.html.style.height = `${this.alignment != Alignment.vertical ? TILE_HEIGHT : this.size * TILE_HEIGHT}px`;
 
         let img = document.createElement('img');
-		img.src = `../assets/${this.size}.png`;
+		img.src = `../assets/images/${this.size}.png`;
         img.style.width = `${TILE_WIDTH}px`;
         img.style.transformOrigin = 'top left';
         img.style.transform = alignment == Alignment.horizontal ? `rotateZ(90deg)  translateY(-100%)` : '';
@@ -508,7 +510,7 @@ class Tile {
         this.html.addEventListener('animationstart', (event) => {
             if (event.animationName !== 'pulse') return;
             const animation = event.target.getAnimations().find((anim) => anim.animationName === 'pulse');
-            if(animation != null) animation.startTime = 1;
+            if(animation) animation.startTime = 1;
         });
     }
 
@@ -528,7 +530,7 @@ class Tile {
         this.html.style.backgroundColor = color;
     }
 
-    raise() {
+    highlight() {
         this.color = 'lightgrey';
         this.html.style.animation = 'bounce 500ms forwards';
     }
