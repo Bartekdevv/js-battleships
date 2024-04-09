@@ -19,8 +19,8 @@ class Game {
         document.getElementById('topbar').removeAttribute('style');
 
         this.players = new Array();
-        for(let i = 0; i < 2; i++){
-            const player = new Player(`Player ${i+1}`, new Board(COLS, ROWS));
+        for(let i = 1; i < 3; i++){
+            const player = new Player(`Player ${i}`, new Board(COLS, ROWS));
             player.board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
             player.board.ontilemouseleave = (tile) => this.handleTileMouseLeave(tile);
             player.board.ontileclicked = (tile) => this.handleTileClick(tile);
@@ -214,11 +214,11 @@ class Player {
     }
 
     set name(name) {
-        this.html.childNodes[0].innerText = name;
+        this.html.childNodes[0].innerHTML = name;
     }
 
     get name() {
-        return this.html.childNodes[0]?.innerText;
+        return this.html.childNodes[0]?.innerHTML;
     }
 
     toggleShipAlignment() {
@@ -348,7 +348,6 @@ class Player {
             img.src = `../assets/images/${size}.png`;
             content.appendChild(img);
         }
-
         topbar.innerHTML = content.innerHTML;
     }
 }
