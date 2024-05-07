@@ -16,14 +16,13 @@ const Alignment = {
     Horizontal: 'Horizontal'
 };
 
-
 class Game {
     init() {
         document.getElementById('player-container').innerHTML = '';
         document.getElementById('topbar').removeAttribute('style');
 
         this.players = new Array();
-        for(let i = 1; i < 3; i++){
+        for(let i = 1; i <= 2; i++){
             const player = new Player(`Player ${i}`, new Board(BOARD_SIZE));
             player.board.ontilemouseover = (tile) => this.handleTileMouseOver(tile);
             player.board.ontilemouseleave = (tile) => this.handleTileMouseLeave(tile);
@@ -34,8 +33,7 @@ class Game {
         this.inTurn = this.players[0];
         this.notInTurn = this.players[1];
 
-        onkeydown = (event) => this.handleKeyEvents(event);
-        onkeyup = (event) => this.handleKeyEvents(event);
+        onkeydown = onkeyup = (event) => this.handleKeyEvents(event);
     }
 
     run() {
@@ -201,7 +199,7 @@ class Player {
         this.html.className = 'column cross-axis-center';
 
         this.html.appendChild(document.createElement('h2'));
-        this.name = name;
+        this.html.childNodes[0].innerHTML = name;
         this.html.appendChild(this.board.html);
         const playerContainer = document.getElementById('player-container');
         playerContainer.appendChild(this.html);
@@ -215,10 +213,6 @@ class Player {
         this.totalAttempts = 0;
         this.successfulHits = 0;
         this.shipsDestroyed = 0;
-    }
-
-    set name(name) {
-        this.html.childNodes[0].innerHTML = name;
     }
 
     get name() {
